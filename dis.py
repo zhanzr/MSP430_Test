@@ -244,7 +244,22 @@ OPCODE_RETI = 0x1300
 offset = 0xf000	
 reset = 0xf042
 com_a0 = 0xf05A
+
 NOP_CONST = 0x4303
+RET_CONST = 0x4130
+
+CLRN_CONST = 0xC222
+CLRC_CONST = 0xC312
+CLRZ_CONST = 0xC322
+
+DINT_CONST = 0xC232
+EINT_CONST = 0xD232
+
+SETN_CONST = 0xD222
+SETC_CONST = 0xD312
+SETZ_CONST = 0xD322
+
+BW_STR = ['W', 'B']
 
 word_len = len(code_f000)
 #print(word_len)
@@ -256,113 +271,599 @@ reset_idx = (reset-offset)//2
 	
 com_a0_idx = (com_a0-offset)//2
 
+def single_get_len(D_Ad):
+	if(0==D_Ad):
+	#Rn
+		return 1
+	elif(1==D_Ad):
+	#
+		return 2
+	elif(2==D_Ad):
+	#
+		return 1
+	elif(3==D_Ad):
+	#
+		return 2
+		
+def double_get_len(D_As, D_Ad):
+	if(0==D_Ad):
+		if(0==D_As):
+		#
+			return 1
+		elif(1==D_As):
+		#
+			return 1
+		elif(2==D_As):
+		#
+			return 1
+		elif(3==D_As):
+		#
+			return 2
+	elif(1==D_Ad):
+		if(0==D_As):
+		#Sure
+			return 2
+		elif(1==D_As):
+		#Sure
+			return 2
+		elif(2==D_As):
+		#Sure
+			return 2
+		elif(3==D_As):
+		#Sure
+			return 3
+		
 def dis(addr, code):
 	ret = [1, "unknown %04x->%04x" % (offset+addr*2, code[0])]
 	
-	#special for NOP
+	#emulated instruction for NOP
 	if(NOP_CONST == code[0]):
 		ret[1] = "NOP"
 		return ret
 		
-	#single
+	#emulated instruction for RET
+	if(RET_CONST == code[0]):
+		ret[1] = "RET\n"
+		return ret	
+		
+	#emulated instruction for CLRN
+	if(CLRN_CONST == code[0]):
+		ret[1] = "CLRN"
+		return ret
+		
+	#emulated instruction for CLRC
+	if(CLRC_CONST == code[0]):
+		ret[1] = "CLRC"
+		return ret	
+		
+	#emulated instruction for CLRZ
+	if(CLRZ_CONST == code[0]):
+		ret[1] = "CLRZ"
+		return ret			
+
+	#emulated instruction for SETN
+	if(SETN_CONST == code[0]):
+		ret[1] = "SETN"
+		return ret
+		
+	#emulated instruction for SETC
+	if(SETC_CONST == code[0]):
+		ret[1] = "SETC"
+		return ret	
+		
+	#emulated instruction for SETZ
+	if(SETZ_CONST == code[0]):
+		ret[1] = "SETZ"
+		return ret	
+
+	#emulated instruction for DINT
+	if(DINT_CONST == code[0]):
+		ret[1] = "DINT"
+		return ret	
+		
+	#emulated instruction for EINT
+	if(EINT_CONST == code[0]):
+		ret[1] = "EINT"
+		return ret			
+
+	#single Opcode
 	b15_7 = (code[0]>>7)
-	#double
+	bw = (code[0]&0x0040)>>6
+	S_Ad = (code[0]&0x0030)>>4
+	S_DSReg = (code[0]&0x000F)
+	
+	#double Opcode
 	b15_12 = (code[0]>>12)
-	#Jump
+	D_SReg = (code[0]&0x0F00)>>8
+	D_Ad = (code[0]&0x0080)>>7
+	#bw = (code[0]&0x0040)>>6
+	D_As = (code[0]&0x0030)>>4
+	D_DReg = (code[0]&0x000F)
+	
+	#Jump Opcode
 	b15_13 = (code[0]>>13)
+	Jmp_C = (code[0]&0x1C00)>>10
+	Jmp_Off = (code[0]&0x003F)
 	
 #TODO: Should condisder the addressing mode to decide the length of the instruct(Format I)	
+	#Single
 	if(b15_7== 0x20):
-		if(0 == (code[0]&0x0040)):
-			ret[1] = "RRC.W Ad:%x D/S-Reg:%x" % ((code[0]&0x0030)>>4, (code[0]&0x000F))
-		else:
-			ret[1] = "RRC.B Ad:%x D/S-Reg:%x" % ((code[0]&0x0030)>>4, (code[0]&0x000F))
+		ret[0] = single_get_len(S_Ad)
+		ret[1] = "RRC"
 
 	elif(b15_7== 0x21):
+		ret[0] = single_get_len(S_Ad)
 		ret[1] = "SWPB"		
 		
 	elif(b15_7== 0x22):
-		if(0 == (code[0]&0x0040)):
-			ret[1] = "RRA.W Ad:%x D/S-Reg:%x" % ((code[0]&0x0030)>>4, (code[0]&0x000F))
-		else:
-			ret[1] = "RRA.B Ad:%x D/S-Reg:%x" % ((code[0]&0x0030)>>4, (code[0]&0x000F))
-			
-	elif(b15_7== 0x23):
-		ret[1] = "SXT"	
-	elif(b15_7== 0x24):
-		ret[1] = "PUSH/PUSHB"	
-	elif(b15_7== 0x25):
-		ret[0] = 1
-		ret[1] = ("CALL #0x%04X" % code[1])	
-	elif(b15_7== 0x26):
-		ret[1] = "RETI"	
-		
-#TODO: Should condisder the addressing mode to decide the length of the instruct(Format II)						
-	elif(b15_12== 4):
-		ret[1] = "MOV"				
+		ret[0] = single_get_len(S_Ad)
+		ret[1] = "RRA"
 
+	elif(b15_7== 0x23):
+		ret[0] = single_get_len(S_Ad)
+		ret[1] = "SXT"	
+		
+	elif(b15_7== 0x24):
+		ret[0] = single_get_len(S_Ad)
+		ret[1] = "PUSH"		
+		
+	elif(b15_7== 0x25):
+#All addressing modes are possible for the CALL instruction. If the symbolic mode (ADDRESS), the
+#immediate mode (#N), the absolute mode (&EDE) or the indexed mode x(RN) is used, the word that
+#follows contains the address information.	
+		ret[0] = 2
+		ret[1] = ("CALL #0x%04X" % code[1])	
+		
+	elif(b15_7== 0x26):
+		ret[0] = 1
+		ret[1] = "RETI\n"	
+		
+#TODO: Should condisder the addressing mode to decide the length of the instruct(Format II)		
+#Double				
+	elif(b15_12== 4):
+		#ret[0] = double_get_len(D_As, D_Ad)
+		ret[1] = "MOV"
+		if(0==D_Ad):
+			if(0==D_As):
+			#
+				ret[0] = 1
+			elif(1==D_As):
+			#
+				ret[0] = 1
+			elif(2==D_As):
+			#
+				ret[0] = 1
+			elif(3==D_As):
+			#
+				ret[0] = 2
+		elif(1==D_Ad):
+			if(0==D_As):
+			#Sure
+				ret[0] = 2
+			elif(1==D_As):
+			#Sure
+				ret[0] = 3
+			elif(2==D_As):
+			#Sure
+				ret[0] = 2
+			elif(3==D_As):
+				if(0==D_SReg):
+					ret[0] = 3
+				else:
+					ret[0] = 2
+		
 	elif(b15_12== 5):
+		#ret[0] = double_get_len(D_As, D_Ad)
 		ret[1] = "ADD"
+		if(0==D_Ad):
+			if(0==D_As):
+			#
+				ret[0] = 1
+			elif(1==D_As):
+			#
+				ret[0] = 1
+			elif(2==D_As):
+			#
+				ret[0] = 1
+			elif(3==D_As):
+			#
+				ret[0] = 2
+		elif(1==D_Ad):
+			if(0==D_As):
+			#Sure
+				ret[0] = 2
+			elif(1==D_As):
+			#Sure
+				ret[0] = 2
+			elif(2==D_As):
+			#Sure
+				ret[0] = 2
+			elif(3==D_As):
+			#Sure
+				ret[0] = 3
+
 				
 	elif(b15_12== 6):
+		#ret[0] = double_get_len(D_As, D_Ad)			
 		ret[1] = "ADDC"
+		if(0==D_Ad):
+			if(0==D_As):
+			#
+				ret[0] = 1
+			elif(1==D_As):
+			#
+				ret[0] = 1
+			elif(2==D_As):
+			#
+				ret[0] = 1
+			elif(3==D_As):
+			#
+				ret[0] = 2
+		elif(1==D_Ad):
+			if(0==D_As):
+			#Sure
+				ret[0] = 2
+			elif(1==D_As):
+			#Sure
+				ret[0] = 2
+			elif(2==D_As):
+			#Sure
+				ret[0] = 2
+			elif(3==D_As):
+			#Sure
+				ret[0] = 3
+
 				
 	elif(b15_12== 7):
+		#ret[0] = double_get_len(D_As, D_Ad)
 		ret[1] = "SUBC"
+		if(0==D_Ad):
+			if(0==D_As):
+			#
+				ret[0] = 1
+			elif(1==D_As):
+			#
+				ret[0] = 1
+			elif(2==D_As):
+			#
+				ret[0] = 1
+			elif(3==D_As):
+			#
+				ret[0] = 2
+		elif(1==D_Ad):
+			if(0==D_As):
+			#Sure
+				ret[0] = 2
+			elif(1==D_As):
+			#Sure
+				ret[0] = 2
+			elif(2==D_As):
+			#Sure
+				ret[0] = 2
+			elif(3==D_As):
+			#Sure
+				ret[0] = 3
 					
 	elif(b15_12== 8):
+		#ret[0] = double_get_len(D_As, D_Ad)
 		ret[1] = "SUB"
+		if(0==D_Ad):
+			if(0==D_As):
+			#
+				ret[0] = 1
+			elif(1==D_As):
+			#
+				ret[0] = 1
+			elif(2==D_As):
+			#
+				ret[0] = 1
+			elif(3==D_As):
+			#
+				ret[0] = 2
+		elif(1==D_Ad):
+			if(0==D_As):
+			#Sure
+				ret[0] = 2
+			elif(1==D_As):
+			#Sure
+				ret[0] = 2
+			elif(2==D_As):
+			#Sure
+				ret[0] = 2
+			elif(3==D_As):
+			#Sure
+				ret[0] = 3
+
 				
 	elif(b15_12== 9):
-		ret[0] = 1
-		
-		if(0 == (code[0]&0x0040)):		
-			ret[1] = "CMP.W #%04X, #%04X, SReg:%x, Ad:%x, As:%x, DReg:%x" % (code[1], code[2],(code[0]&0x0F00)>>12, (code[0]&0x0080)>>7, (code[0]&0x0030)>>4,(code[0]&0x000F))
-		else:
-			ret[1] = "CMP.B #%04X, #%04X, SReg:%x, Ad:%x, As:%x, DReg:%x" % (code[1], code[2],(code[0]&0x0F00)>>12, (code[0]&0x0080)>>7, (code[0]&0x0030)>>4,(code[0]&0x000F))		
+		#ret[0] = double_get_len(D_As, D_Ad)
+		ret[1] = "CMP"
+		if(0==D_Ad):
+			if(0==D_As):
+			#
+				ret[0] = 1
+			elif(1==D_As):
+			#
+				ret[0] = 1
+			elif(2==D_As):
+			#
+				ret[0] = 1
+			elif(3==D_As):
+			#
+				ret[0] = 2
+		elif(1==D_Ad):
+			if(0==D_As):
+			#Sure
+				ret[0] = 2
+			elif(1==D_As):
+			#Sure
+				ret[0] = 2
+			elif(2==D_As):
+			#Sure
+				ret[0] = 2
+			elif(3==D_As):
+			#Sure
+				ret[0] = 3
+
 			
 	elif(b15_12== 0x0A):
+		#ret[0] = double_get_len(D_As, D_Ad)
 		ret[1] = "DADD"
+		if(0==D_Ad):
+			if(0==D_As):
+			#
+				ret[0] = 1
+			elif(1==D_As):
+			#
+				ret[0] = 1
+			elif(2==D_As):
+			#
+				ret[0] = 1
+			elif(3==D_As):
+			#
+				ret[0] = 2
+		elif(1==D_Ad):
+			if(0==D_As):
+			#Sure
+				ret[0] = 2
+			elif(1==D_As):
+			#Sure
+				ret[0] = 2
+			elif(2==D_As):
+			#Sure
+				ret[0] = 2
+			elif(3==D_As):
+			#Sure
+				ret[0] = 3
+	
 				
 	elif(b15_12== 0x0B):
+		#ret[0] = double_get_len(D_As, D_Ad)
 		ret[1] = "BIT"
+		if(0==D_Ad):
+			if(0==D_As):
+			#
+				ret[0] = 1
+			elif(1==D_As):
+			#
+				ret[0] = 1
+			elif(2==D_As):
+			#
+				ret[0] = 1
+			elif(3==D_As):
+			#
+				ret[0] = 2
+		elif(1==D_Ad):
+			if(0==D_As):
+			#Sure
+				ret[0] = 2
+			elif(1==D_As):
+			#Sure
+				ret[0] = 2
+			elif(2==D_As):
+			#Sure
+				ret[0] = 2
+			elif(3==D_As):
+			#Sure
+				ret[0] = 3
+
 					
 	elif(b15_12== 0x0C):
+		#ret[0] = double_get_len(D_As, D_Ad)
 		ret[1] = "BIC"
-				
+		if(0==D_Ad):
+			if(0==D_As):
+			#
+				ret[0] = 1
+			elif(1==D_As):
+			#
+				ret[0] = 1
+			elif(2==D_As):
+			#
+				ret[0] = 1
+			elif(3==D_As):
+			#
+				ret[0] = 2
+		elif(1==D_Ad):
+			if(0==D_As):
+			#Sure
+				ret[0] = 2
+			elif(1==D_As):
+			#Sure
+				ret[0] = 2
+			elif(2==D_As):
+			#Sure
+				ret[0] = 2
+			elif(3==D_As):
+			#Sure
+				ret[0] = 3
+						
 	elif(b15_12== 0x0D):
-		ret[0] = 1
-		
-		if(0 == (code[0]&0x0040)):		
-			ret[1] = "BIS.W #%04X, SReg:%x, Ad:%x, As:%x, DReg:%x" % (code[1], (code[0]&0x0F00)>>12, (code[0]&0x0080)>>7, (code[0]&0x0030)>>4,(code[0]&0x000F))
-		else:
-			ret[1] = "BIS.B #%04X, SReg:%x, Ad:%x, As:%x, DReg:%x" % (code[1], (code[0]&0x0F00)>>12, (code[0]&0x0080)>>7, (code[0]&0x0030)>>4,(code[0]&0x000F))
+		#ret[0] = double_get_len(D_As, D_Ad)
+		ret[1] = "BIS"
+		if(0==D_Ad):
+			if(0==D_As):
+			#
+				ret[0] = 1
+			elif(1==D_As):
+			#
+				ret[0] = 1
+			elif(2==D_As):
+			#
+				ret[0] = 1
+			elif(3==D_As):
+			#
+				ret[0] = 2
+		elif(1==D_Ad):
+			if(0==D_As):
+			#Sure
+				ret[0] = 2
+			elif(1==D_As):
+			#Sure
+				ret[0] = 2
+			elif(2==D_As):
+			#Sure
+				ret[0] = 2
+			elif(3==D_As):
+			#Sure
+				ret[0] = 3			 
 			
 	elif(b15_12== 0x0E):
+		#ret[0] = double_get_len(D_As, D_Ad)
 		ret[1] = "XOR"
+		if(0==D_Ad):
+			if(0==D_As):
+			#
+				ret[0] = 1
+			elif(1==D_As):
+			#
+				ret[0] = 1
+			elif(2==D_As):
+			#
+				ret[0] = 1
+			elif(3==D_As):
+			#
+				ret[0] = 2
+		elif(1==D_Ad):
+			if(0==D_As):
+			#Sure
+				ret[0] = 2
+			elif(1==D_As):
+			#Sure
+				ret[0] = 2
+			elif(2==D_As):
+			#Sure
+				ret[0] = 2
+			elif(3==D_As):
+			#Sure
+				ret[0] = 3
+
 				
 	elif(b15_12== 0x0F):
+		#ret[0] = double_get_len(D_As, D_Ad)
 		ret[1] = "AND"
+		if(0==D_Ad):
+			if(0==D_As):
+			#
+				ret[0] = 1
+			elif(1==D_As):
+			#
+				ret[0] = 1
+			elif(2==D_As):
+			#
+				ret[0] = 1
+			elif(3==D_As):
+			#
+				ret[0] = 2
+		elif(1==D_Ad):
+			if(0==D_As):
+			#Sure
+				ret[0] = 2
+			elif(1==D_As):
+			#Sure
+				ret[0] = 2
+			elif(2==D_As):
+			#Sure
+				ret[0] = 2
+			elif(3==D_As):
+			#Sure
+				ret[0] = 3
+
 			
 #All jump instructions require one code word, and take two CPU cycles to execute, regardless of whether
-#the jump is taken or not.			
+#the jump is taken or not.	
+		#Jump
 	elif(b15_13== 1):
-		ret[1] = "jmp"
-		
+		if(0==Jmp_C):
+		#JNE/JNZ	Jump if not equal/zero
+			ret[1] = "JNE 0x%03X" % (Jmp_Off*2)
+		elif(1==Jmp_C):
+		#JEQ/JZ Jump if equal/zero
+			ret[1] = "JEQ 0x%03X" % (Jmp_Off*2)
+		elif(2==Jmp_C):
+		#JNC/JLO	Jump if no carry/lower
+			ret[1] = "JNC 0x%03X" % (Jmp_Off*2)
+		elif(3==Jmp_C):
+		#JC/JHS	Jump if carry/higher or same
+			ret[1] = "JC 0x%03X" % (Jmp_Off*2)
+		elif(4==Jmp_C):
+		#JN	Jump if negative
+			ret[1] = "JN 0x%03X" % (Jmp_Off*2)
+		elif(5==Jmp_C):
+		#JGE	Jump if greater or equal (N == V)
+			ret[1] = "JGE 0x%03X" % (Jmp_Off*2)
+		elif(6==Jmp_C):
+		#JL	Jump if less (N!= V)
+			ret[1] = "JL 0x%03X" % (Jmp_Off*2)
+		elif(7==Jmp_C):
+		#JMP	Jump (unconditionally
+			ret[1] = "JMP 0x%03X" % (Jmp_Off*2)		
+
+	#Single Process except RETI and CALL
+	if(b15_7 in range(0x20, 0x25)):
+		ret[1] +=".%s " % BW_STR[bw]
+		if(0==S_Ad):
+			ret[1] +="R%02d" % S_DSReg
+		elif(1==S_Ad):
+			if(ret[0]==1):
+				ret[1] +="%02d" % S_DSReg
+			else:
+				ret[1] +="%02d, %04X" % (S_DSReg, code[1])
+		elif(2==S_Ad):
+			ret[1] +="2 %02d" % S_DSReg
+		elif(3==S_Ad):
+			ret[1] +="3 %02d" % S_DSReg	
+			
+	#Double Process
+	if(b15_12 in range(4,16)):
+		ret[1] += ".%s " % BW_STR[bw]
+		para_str=''
+		if(ret[0]==1):
+			pass
+		elif(ret[0]==2):
+			para_str = '#%04X, ' % code[1]
+		elif(ret[0]==3):
+			para_str = '#%04X, #%04X, ' % (code[1], code[2])
+		ret[1] += para_str
+		ret[1] += "SReg:%x, D_Ad:%x, D_As:%x, DReg:%x" % (D_SReg, D_Ad, D_As, D_DReg)	
+			
 	return ret
 
-dis_addr = com_a0_idx
+#dis_addr = com_a0_idx
+dis_addr = 0
 for i in range(com_a0_idx, word_len-com_a0_idx):	
+
 	ret = dis(dis_addr, code_f000[dis_addr:dis_addr+3])
-	print('%s\t//;[%04X]\t' % (ret[1], offset+dis_addr*2), end='')
+	print('\t%s\t//;[%04X]\t' % (ret[1], offset+dis_addr*2), end='')
+	
 	for j in range(ret[0]):
 		print('%04X' % code_f000[dis_addr+j], end=' ')
 	print()
 	
 	#Only Decode ISR for test
-	if(ret[1] == "RETI"):
-		print()
-		break;
+	#if(ret[1] == "RETI"):
+	#	print()
+	#	break;
 		
 	dis_addr += ret[0]
 	if(dis_addr>=word_len):
