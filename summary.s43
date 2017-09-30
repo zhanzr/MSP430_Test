@@ -88,7 +88,7 @@ l_f0a8:
 	RRC.B   @R4
 	ADD.B   #-1,&0x021d
 	JEQ     l_f0c6
-	BR      l_f5e4           
+	BR      COM_A_ISR_EXIT_F5E4
 l_f0c6:
 	AND.B   #0x00c0,&0x0201
 	TST.B   &0x021e
@@ -146,7 +146,7 @@ l_f170:
 l_f174:
 	MOV.B   #1,&0x021e
 	MOV.B   #2,&0x021f
-	BR      l_f5e4
+	BR      COM_A_ISR_EXIT_F5E4
 l_f180:
 	BIT.W   #1,&0x0210
 	JLO     l_f46a
@@ -228,14 +228,15 @@ l_f264:
 	JMP     l_f446
 l_f28c:
 	CMP.B   #0x004f,&0x021c
-	JNE     (0xf298)
+	JNE     l_f298
 	CALL   #f_fc00
+l_f298:
 	MOV.B   &0x0230,&0x020e
 	CALL    #f_fc5a
 	JMP     l_f446
 l_f2a4:
 	CMP.B   #0x004f,&0x021c
-	JNE     (0xf2ea)
+	JNE     l_f2ea
 	CMP.B   &0x0207,&0x0233
 	JNE     l_f446
 	CMP.B   &0x0208,&0x0234
@@ -366,12 +367,12 @@ l_f446:
 	CLR.B   &0x0222
 	CLR.B   &0x0223
 	BIS.W   #1,&TA0CCTL0
-	JMP     l_f5e4
+	JMP     COM_A_ISR_EXIT_F5E4
 l_f458:
 	ADD.B   &0x0202,&0x0220
 	MOV.B   #8,&0x021d
 	MOV.W   #0x0898,&TA0CCR0
-	JMP     l_f5e4
+	JMP     COM_A_ISR_EXIT_F5E4
 l_f46a:
 	CLRC    
 	RRC.B   &0x0202
@@ -381,9 +382,9 @@ l_f476:
 	JLO     l_f476
 	BIC.W   #1,&TA0CCTL0
 	CMP.B   &0x0202,&0x021c
-	JNE     l_f5e0
+	JNE     COM_A_ISR_EXIT_TA0IFG_F5E0
 	CMP.W   &0x0212,&0x0200
-	JNE     l_f5e0
+	JNE     COM_A_ISR_EXIT_TA0IFG_F5E0
 	CMP.B   #0x0040,&0x021c
 	JNE     l_f51c
 	MOV.B   &0x0210,R14
@@ -393,18 +394,18 @@ l_f476:
 	CALL    #f_f888
 	CALL    #f_fc32
 	TST.W   R12
-	JNE     l_f5e0
+	JNE     COM_A_ISR_EXIT_TA0IFG_F5E0
 	TST.B   &0x021a
 	JL      l_f4bc
 	BIC.W   #8,&0x0210
-	JMP     l_f5e0
+	JMP     COM_A_ISR_EXIT_TA0IFG_F5E0
 l_f4bc:
 	MOV.B   &0x0203,R14
 	INC.B   R14
 	MOV.B   R14,&0x0226
 	BIC.B   #0x0080,&0x021a
 	BIS.W   #8,&0x0210
-	JMP     l_f5e0
+	JMP     COM_A_ISR_EXIT_TA0IFG_F5E0
 l_f4d2:
 	BIT.W   #2,&0x0210
 	JLO     l_f4e6
@@ -413,22 +414,22 @@ l_f4d2:
 	CALL   #f_fc00
 l_f4e6:
 	CMP.B   #0x00aa,&0x0241
-	JNE     l_f5e0
+	JNE     COM_A_ISR_EXIT_TA0IFG_F5E0
 	CMP.B   #0x0055,&0x0242
-	JNE     l_f5e0
+	JNE     COM_A_ISR_EXIT_TA0IFG_F5E0
 	CMP.B   #0x00cc,&0x0243
-	JNE     l_f5e0
+	JNE     COM_A_ISR_EXIT_TA0IFG_F5E0
 	CMP.B   #0x0033,&0x0244
-	JNE     l_f5e0
+	JNE     COM_A_ISR_EXIT_TA0IFG_F5E0
 	CALL    #f_f98c
 	CLR.B   &0x0241
 	CLR.B   &0x0242
 	CLR.B   &0x0243
 	CLR.B   &0x0244
-	JMP     l_f5e0
+	JMP     COM_A_ISR_EXIT_TA0IFG_F5E0
 l_f51c:
 	BIT.W   #2,&0x0210
-	JLO     l_f5e0
+	JLO     COM_A_ISR_EXIT_TA0IFG_F5E0
 	TST.B   &0x021c
 	JNE     l_f572
 	MOV.W   #0x03f2,&TA0CCR0
@@ -469,21 +470,21 @@ l_f5b2:
 	CLR.B   &0x0246
 l_f5b6:
 	CMP.B   #0x0003,&0x021c
-	JNE     l_f5e0
+	JNE     COM_A_ISR_EXIT_TA0IFG_F5E0
 	BIT.B   #0x0040,&0x021a
 	JHS     l_f5ce
 	BIT.W   #4,&0x0210
-	JHS     l_f5e0
+	JHS     COM_A_ISR_EXIT_TA0IFG_F5E0
 	JMP     l_f5d6
 l_f5ce:
 	BIT.W   #0x0100,&0x0210
-	JHS     l_f5e0
+	JHS     COM_A_ISR_EXIT_TA0IFG_F5E0
 l_f5d6:
 	MOV.W   #0x05c8,&TA0CCR0
 	CALL    #f_fac4        
-l_f5e0:
+COM_A_ISR_EXIT_TA0IFG_F5E0:
 	BIS.W   #1,&TA0CCTL0
-l_f5e4:
+COM_A_ISR_EXIT_F5E4:
 	BIC.B   #1,&CACTL1
 	BIC.W   #0x0010,0x0008(SP)
 	POP.W   R14
@@ -499,7 +500,7 @@ main_f5f8:
 	BIS.B   #0x0080,&BCSCTL1
 	CLR.B   &BCSCTL2
 	MOV.B   #0x0020,&BCSCTL3
-	BIS.W   #0x0020,SR
+	BIS.W   #OSCOFF,SR
 	CALL    #PortInit
 	CALL    #ComparatorInit
 	CALL    #f_fa6a
@@ -528,7 +529,7 @@ l_f654:
 	CMP.B   #0x00a0,&0x0246
 	JEQ     l_f676
 	MOV.W   #0x5a80,&WDTCTL
-	BIS.W   #0x0010,SR     
+	BIS.W   #CPUOFF,SR
 l_f676:
 	MOV.W   #0x5a0d,&WDTCTL
 	CMP.W   #0x00a0,&0x0218
