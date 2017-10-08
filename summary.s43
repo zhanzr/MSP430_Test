@@ -787,14 +787,14 @@ l_f942:
 	MOV.W   #0x07d0,&TA0CCR0
 	BIC.W   #1,&TA0CCTL0
 	BIC.B   #1,&CACTL1
-l_0xf970:
+l_f970:
 	BIT.B   #1,&CACTL1
 	JLO     l_f97e
 	BIC.W   #0x0010,&0x0210
 	RET     
 l_f97e:
 	BIT.W   #1,&TA0CCTL0
-	JLO     l_0xf970
+	JLO     l_f970
 l_f984:
 	BIS.W   #0x0040,&0x0210        
 l_f98a:
