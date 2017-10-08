@@ -158,7 +158,7 @@ l_f180:
 	CMP.B   #1,R15
 	JNE     l_f1b2
 	MOV.B   &0x0202,R14
-	ND.B   #0x000f,R14
+	AND.B   #0x000f,R14
 	INCD.B  R14
 	MOV.B   R14,&0x021f          
 l_f1b2:
